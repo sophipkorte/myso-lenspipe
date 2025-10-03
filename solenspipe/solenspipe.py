@@ -1516,7 +1516,7 @@ def get_labels():
 class LensingSandbox(object):
     def __init__(self,fwhm_arcmin,noise_uk,dec_min,dec_max,res, # simulation
                  lmin,lmax,mlmax,ests, # reconstruction
-                 add_noise = False, mask = None,
+                 add_noise = False, mask = None, #maybe add new argument for for noise that is nonwhite
                  verbose = False):  # whether to add noise (it will still be in the filters)
         self.fwhm = fwhm_arcmin
         self.noise = noise_uk
@@ -1541,15 +1541,15 @@ class LensingSandbox(object):
             print(f"W3 factor: {self.w3:.5f}")
             print(f"W4 factor: {self.w4:.5f}")
 
-        self.ucls,self.tcls = futils.get_theory_dicts_white_noise(self.fwhm,self.noise,grad=True)
+        self.ucls,self.tcls = futils.get_theory_dicts_white_noise(self.fwhm,self.noise,grad=True) #change here
         self.Als = pytempura.get_norms(ests, self.ucls, self.ucls, self.tcls, lmin, lmax)
         ls = np.arange(self.Als[ests[0]][0].size)
         self.Nls = {}
         px = qe.pixelization(self.shape,self.wcs)
         self.qfuncs = {}
         for est in ests:
-            self.qfuncs[est] =  get_qfunc(px,self.ucls,mlmax,est,Al1=self.Als[est])
-            self.Nls[est] = self.Als[est][0] * (ls*(ls+1.)/2.)**2.
+            self.qfuncs[est] =  get_qfunc(px,self.ucls,mlmax,est,Al1=self.Als[est]) #might change here
+            self.Nls[est] = self.Als[est][0] * (ls*(ls+1.)/2.)**2. #lensing noise I think?
 
 
         self.mlmax = mlmax
@@ -1575,7 +1575,7 @@ class LensingSandbox(object):
 
     def get_observed_map(self,index,iset=0):
         shape,wcs = self.shape,self.wcs
-        calm = futils.get_cmb_alm(index,iset)
+        calm = futils.get_cmb_alm(index,iset) #might change here
         calm = cs.almxfl(calm,lambda x: maps.gauss_beam(self.fwhm,x))
         # ignoring pixel window function here
         omap = cs.alm2map(calm,enmap.empty((3,)+shape,wcs,dtype=np.float32),spin=[0,2])
@@ -1588,7 +1588,7 @@ class LensingSandbox(object):
 
     def kmap(self,stuple):
         icov,ip,i = stuple
-        nstep = 500
+        nstep = 500 #might have to change this
         if i>nstep: raise ValueError
         if ip==0 or ip==1:
             iset = 0
@@ -1619,10 +1619,10 @@ class LensingSandbox(object):
     
     def get_rdn0(self,prepared_data_alms,est,nsims,comm):
         Xdata = prepared_data_alms
-        return bias.simple_rdn0(0,est,est,lambda alpha,X,Y: self.qfuncs[alpha](X,Y),self.kmap,comm,cs.alm2cl,nsims,Xdata)
+        return bias.simple_rdn0(0,est,est,lambda alpha,X,Y: self.qfuncs[alpha](X,Y),self.kmap,comm,cs.alm2cl,nsims,Xdata) #change here because it only works with a lot of sims
 
     def get_mcn1(self,est,nsims,comm):
-        return bias.mcn1(0,self.kmap,cs.alm2cl,nsims,self.qfuncs[est],comm=comm,verbose=True).mean(axis=0)
+        return bias.mcn1(0,self.kmap,cs.alm2cl,nsims,self.qfuncs[est],comm=comm,verbose=True).mean(axis=0) #prob change here
 
     def get_mcmf(self,est,nsims,comm):
-        return bias.mcmf_pair(0,self.qfuncs[est],self.kmap,comm,nsims)
+        return bias.mcmf_pair(0,self.qfuncs[est],self.kmap,comm,nsims) #prob change here
